@@ -1,0 +1,30 @@
+{
+  "name": "kadence-child",
+  "version": "1.0.0",
+  "description": "Generic Kadence child theme",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "bump": "plugin-updater kadence-child",
+    "start": "wp-env start",
+    "stop": "wp-env stop",
+    "debug": "wp-env start --xdebug",
+    "status": "wp-env status",
+    "update": "wp-env start --update",
+    "logs": "wp-env logs",
+    "wp": "wp-env run cli wp",
+    "composer": "wp-env run cli --env-cwd=wp-content/themes/kadence-child composer",
+    "shell": "wp-env run cli bash",
+    "reset": "wp-env reset development && wp-env start",
+    "destroy": "wp-env destroy",
+    "phpunit": "wp-env run cli --env-cwd=wp-content/themes/kadence-child vendor/bin/phpunit",
+    "test": "npm run phpunit"
+  },
+  "devDependencies": {
+    "@procyon-creative/plugin-updater": "^1.1.0",
+    "@wordpress/env": "^12.0.0"
+  }
+}

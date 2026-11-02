@@ -1,0 +1,38 @@
+# Files and directories excluded from the release zip.
+# Read by rsync --exclude-from in .github/workflows/release.yml.
+# Same convention as `wp dist-archive`.
+
+# Version control / CI
+.git
+.github
+.gitignore
+.gitattributes
+.distignore
+
+# Editor / OS metadata
+.DS_Store
+.editorconfig
+.idea
+.vscode
+
+# Dev dependencies & lockfiles
+node_modules
+composer.json
+composer.lock
+package.json
+package-lock.json
+
+# Linting / testing
+phpcs.xml
+phpcs.xml.dist
+phpunit.xml
+phpunit.xml.dist
+.phpunit.cache
+.phpunit.result.cache
+tests
+.wp-env.json
+.wp-env.override.json
+
+# Build artifacts
+*.zip
+*.log

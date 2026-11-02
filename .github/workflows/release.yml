@@ -1,0 +1,38 @@
+name: Build release zip
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install production dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Package theme
+        run: |
+          set -euo pipefail
+          STAGE=$(mktemp -d)
+          mkdir "$STAGE/kadence-child"
+          rsync -a --exclude-from=.distignore ./ "$STAGE/kadence-child/"
+          (cd "$STAGE" && zip -rq kadence-child.zip kadence-child)
+          mv "$STAGE/kadence-child.zip" kadence-child.zip
+
+      - name: Upload zip to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.event.release.tag_name }}" kadence-child.zip --repo "${{ github.repository }}" --clobber
