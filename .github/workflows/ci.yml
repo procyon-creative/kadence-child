@@ -2,7 +2,6 @@ name: CI
 
 on:
   push:
-    branches: [main]
     paths-ignore: ["**/*.md", "docs/**"]
   pull_request:
     paths-ignore: ["**/*.md", "docs/**"]
@@ -16,4 +15,5 @@ concurrency:
 
 jobs:
   test:
+    if: github.event_name == 'pull_request' || github.ref_name == github.event.repository.default_branch
     uses: ./.github/workflows/phpunit.yml

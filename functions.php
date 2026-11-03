@@ -26,18 +26,17 @@ if ( file_exists( $kadence_child_autoload ) ) {
 }
 unset( $kadence_child_autoload );
 
-add_action( 'wp_enqueue_scripts', 'kadence_child_parent_theme_enqueue_styles' );
+add_action( 'wp_enqueue_scripts', 'kadence_child_parent_theme_enqueue_styles', 20 );
 
 /**
  * Enqueue scripts and styles.
  */
 function kadence_child_parent_theme_enqueue_styles() {
-	wp_enqueue_style( 'kadence-style', get_template_directory_uri() . '/style.css', array(), '0.1.0' );
 	wp_enqueue_style(
 		'kadence-child-style',
-		get_stylesheet_directory_uri() . '/style.css',
-		array( 'kadence-style' ),
-		'0.1.0'
+		get_stylesheet_uri(),
+		array( 'kadence-global' ),
+		wp_get_theme()->get( 'Version' )
 	);
 }
 
@@ -46,10 +45,12 @@ function kadence_child_parent_theme_enqueue_styles() {
  */
 add_filter( 'walker_nav_menu_start_el', 'kadence_child_nav_menu_start_el', 99, 4 );
 function kadence_child_nav_menu_start_el( $item_output, $item, $depth, $args ) {
-    if ( in_array( 'menu-item-has-children', $item->classes ) ) {
-        $item_output = str_replace( 'drawer-sub-toggle"', 'drawer-sub-toggle" aria-label="Child menu of ' . $item->title . '"', $item_output );
-    }
-    return $item_output;
+	if ( in_array( 'menu-item-has-children', (array) ( $item->classes ?? array() ), true ) ) {
+		/* translators: %s: parent menu item title. */
+		$label = sprintf( __( 'Child menu of %s', 'kadence-child' ), $item->title );
+		$item_output = str_replace( 'drawer-sub-toggle"', 'drawer-sub-toggle" aria-label="' . esc_attr( $label ) . '"', $item_output );
+	}
+	return $item_output;
 }
 
 // Filter kadence_breadcrumb_args
@@ -59,7 +60,7 @@ function kadence_child_breadcrumb_args( $args ) {
     $current_url = home_url( $wp->request );
     // get current page url
     $args += [
-      'before' => '<a class="kadence-bread-current" aria-current="page" href="' . $current_url . '" >',
+      'before' => '<a class="kadence-bread-current" aria-current="page" href="' . esc_url( $current_url ) . '" >',
       'after'  => '</a>',
       'delimiter_before' => '<span class="bc-delimiter" aria-hidden="true">'
     ];

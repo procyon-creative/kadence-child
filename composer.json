@@ -12,8 +12,8 @@
         "sort-packages": true
     },
     "require-dev": {
-        "brain/monkey": "^2.6",
-        "phpunit/phpunit": "^9.6"
+        "phpunit/phpunit": "^9.6",
+        "yoast/phpunit-polyfills": "^1.1"
     },
     "scripts": {
         "test": "phpunit"

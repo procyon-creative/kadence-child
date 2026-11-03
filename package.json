@@ -10,7 +10,7 @@
   "scripts": {
     "bump": "plugin-updater kadence-child",
     "start": "wp-env start",
-    "stop": "wp-env stop",
+    "stop": "node scripts/stop-environments.cjs",
     "debug": "wp-env start --xdebug",
     "status": "wp-env status",
     "update": "wp-env start --update",
@@ -20,8 +20,13 @@
     "shell": "wp-env run cli bash",
     "reset": "wp-env reset development && wp-env start",
     "destroy": "wp-env destroy",
-    "phpunit": "wp-env run cli --env-cwd=wp-content/themes/kadence-child vendor/bin/phpunit",
-    "test": "npm run phpunit"
+    "phpunit": "wp-env run cli --config=.wp-env.test.json --env-cwd=wp-content/themes/kadence-child vendor/bin/phpunit",
+    "test": "npm run test:scripts && npm run test:start && npm run phpunit",
+    "test:start": "wp-env start --config=.wp-env.test.json",
+    "test:stop": "wp-env stop --config=.wp-env.test.json",
+    "test:composer": "wp-env run cli --config=.wp-env.test.json --env-cwd=wp-content/themes/kadence-child composer",
+    "test:wp": "wp-env run cli --config=.wp-env.test.json wp",
+    "test:scripts": "node --test tests-node/*.test.cjs"
   },
   "devDependencies": {
     "@procyon-creative/plugin-updater": "^1.1.0",

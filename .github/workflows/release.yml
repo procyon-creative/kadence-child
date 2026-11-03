@@ -7,9 +7,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -21,6 +26,7 @@ jobs:
           coverage: none
 
       - name: Install production dependencies
+        timeout-minutes: 3
         run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Package theme
