@@ -30,8 +30,15 @@ phpunit.xml.dist
 .phpunit.cache
 .phpunit.result.cache
 tests
+tests-node
+scripts
 .wp-env.json
 .wp-env.override.json
+.wp-env.test.json
+.wp-env.test.override.json
+.agents
+AGENTS.md
+skills-lock.json
 
 # Build artifacts
 *.zip

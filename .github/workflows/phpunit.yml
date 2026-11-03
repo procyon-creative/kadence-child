@@ -18,23 +18,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          php-version: '8.3'
-          extensions: sodium, mbstring, dom
-          tools: composer:v2
-          coverage: none
+          node-version: '24'
+          cache: npm
+
+      - name: Install Node dependencies
+        timeout-minutes: 3
+        run: npm ci
+
+      - name: Run WordPress integration tests
+        timeout-minutes: 3
+        run: npm test
 
       - name: Validate Composer configuration
-        run: composer validate --strict
-
-      - name: Install dependencies
-        timeout-minutes: 3
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: npm run test:composer -- validate --strict
 
       - name: Check PHP syntax
-        run: find functions.php inc tests -name '*.php' -print0 | xargs -0 -n1 php -l
+        run: npx wp-env run cli --config=.wp-env.test.json --env-cwd=wp-content/themes/kadence-child sh -c 'find functions.php inc tests -name "*.php" -print0 | xargs -0 -n1 php -l'
 
-      - name: Run unit tests
-        run: composer test
+      - name: Print container logs on failure
+        if: failure()
+        run: npx wp-env logs --config=.wp-env.test.json --watch=false
+
+      - name: Stop WordPress
+        if: always()
+        run: npm run test:stop

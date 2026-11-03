@@ -4,6 +4,7 @@ vendor/
 *.zip
 *.log
 .wp-env.override.json
+.wp-env.test.override.json
 .env
 .env.*
 !.env.example

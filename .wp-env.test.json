@@ -1,0 +1,17 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/wp-env.json",
+  "testsEnvironment": false,
+  "port": 8889,
+  "themes": ["."],
+  "mappings": {
+    "wp-content/themes/kadence": "https://downloads.wordpress.org/theme/kadence.latest-stable.zip"
+  },
+  "lifecycleScripts": {
+    "afterStart": "npm run test:composer -- install --no-interaction"
+  },
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true,
+    "KADENCE_CHILD_TEST_ENVIRONMENT": true
+  }
+}

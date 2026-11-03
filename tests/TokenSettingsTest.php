@@ -1,51 +1,43 @@
 <?php
 
-use Brain\Monkey;
-use Brain\Monkey\Functions;
-use PHPUnit\Framework\TestCase;
-
-final class TokenSettingsTest extends TestCase {
-    use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
-
+final class TokenSettingsTest extends WP_UnitTestCase {
     private $original_environment;
 
-    protected function setUp(): void {
-        parent::setUp();
-        Monkey\setUp();
+    public function set_up() {
+        parent::set_up();
         $this->original_environment = getenv( 'KADENCE_CHILD_GITHUB_TOKEN' );
         putenv( 'KADENCE_CHILD_GITHUB_TOKEN' );
+        delete_option( KADENCE_CHILD_OPTION_NAME );
     }
 
-    protected function tearDown(): void {
+    public function tear_down() {
         if ( false === $this->original_environment ) {
             putenv( 'KADENCE_CHILD_GITHUB_TOKEN' );
         } else {
             putenv( 'KADENCE_CHILD_GITHUB_TOKEN=' . $this->original_environment );
         }
-        Monkey\tearDown();
-        parent::tearDown();
+        parent::tear_down();
     }
 
-    public function test_environment_token_takes_precedence_without_reading_database(): void {
+    public function test_environment_token_takes_precedence_over_saved_token(): void {
+        update_option( KADENCE_CHILD_OPTION_NAME, kadence_child_encrypt_token( 'saved-token' ) );
         putenv( 'KADENCE_CHILD_GITHUB_TOKEN= environment-token ' );
-        Functions\expect( 'get_option' )->never();
 
         self::assertSame( 'environment-token', kadence_child_get_github_token() );
     }
 
     public function test_unset_environment_uses_saved_encrypted_token(): void {
         $stored = kadence_child_encrypt_token( 'saved-token' );
-        Functions\expect( 'get_option' )->once()
-            ->with( KADENCE_CHILD_OPTION_NAME, '' )->andReturn( $stored );
+        update_option( KADENCE_CHILD_OPTION_NAME, $stored );
 
         self::assertSame( 'saved-token', kadence_child_get_github_token() );
     }
 
     public function test_blank_environment_uses_saved_token(): void {
         putenv( 'KADENCE_CHILD_GITHUB_TOKEN=   ' );
-        Functions\when( 'get_option' )->justReturn( '' );
+        update_option( KADENCE_CHILD_OPTION_NAME, kadence_child_encrypt_token( 'saved-token' ) );
 
-        self::assertSame( '', kadence_child_get_github_token() );
+        self::assertSame( 'saved-token', kadence_child_get_github_token() );
     }
 
     public function test_encryption_round_trip_uses_random_nonce(): void {
@@ -81,15 +73,30 @@ final class TokenSettingsTest extends TestCase {
 
     public function test_environment_token_prevents_saved_token_replacement(): void {
         putenv( 'KADENCE_CHILD_GITHUB_TOKEN=environment-token' );
-        Functions\when( 'get_option' )->justReturn( 'existing-value' );
+        update_option( KADENCE_CHILD_OPTION_NAME, 'existing-value' );
 
         self::assertSame( 'existing-value', kadence_child_sanitize_token( 'replacement' ) );
     }
 
     public function test_blank_submission_preserves_saved_token(): void {
-        Functions\when( 'get_option' )->justReturn( 'existing-value' );
+        update_option( KADENCE_CHILD_OPTION_NAME, 'existing-value' );
 
         self::assertSame( 'existing-value', kadence_child_sanitize_token( '  ' ) );
+    }
+
+    public function test_environment_override_preserves_database_token_when_settings_are_saved(): void {
+        kadence_child_register_settings();
+        update_option( KADENCE_CHILD_OPTION_NAME, 'saved-token' );
+        $stored = get_option( KADENCE_CHILD_OPTION_NAME );
+        putenv( 'KADENCE_CHILD_GITHUB_TOKEN=environment-token' );
+
+        update_option( KADENCE_CHILD_OPTION_NAME, 'replacement' );
+
+        self::assertSame( $stored, get_option( KADENCE_CHILD_OPTION_NAME ) );
+        self::assertSame( 'environment-token', kadence_child_get_github_token() );
+
+        putenv( 'KADENCE_CHILD_GITHUB_TOKEN' );
+        self::assertSame( 'saved-token', kadence_child_get_github_token() );
     }
 
     public function test_new_token_is_trimmed_and_encrypted(): void {
@@ -106,27 +113,26 @@ final class TokenSettingsTest extends TestCase {
     }
 
     public function test_plaintext_migration_encrypts_existing_token(): void {
-        Functions\when( 'get_option' )->justReturn( 'old-token' );
-        Functions\expect( 'update_option' )->once()->with(
-            KADENCE_CHILD_OPTION_NAME,
-            Mockery::on( function ( $value ) {
-                return 'old-token' !== $value && 'old-token' === kadence_child_decrypt_token( $value );
-            } )
-        );
-
+        update_option( KADENCE_CHILD_OPTION_NAME, 'old-token' );
+        kadence_child_register_settings();
         kadence_child_migrate_plaintext_token();
+        $stored = get_option( KADENCE_CHILD_OPTION_NAME );
+
+        self::assertNotSame( 'old-token', $stored );
+        self::assertSame( 'old-token', kadence_child_decrypt_token( $stored ) );
     }
 
     public function test_migration_leaves_encrypted_token_unchanged(): void {
-        Functions\when( 'get_option' )->justReturn( kadence_child_encrypt_token( 'saved-token' ) );
-        Functions\expect( 'update_option' )->never();
-
+        $stored = kadence_child_encrypt_token( 'saved-token' );
+        update_option( KADENCE_CHILD_OPTION_NAME, $stored );
+        kadence_child_register_settings();
         kadence_child_migrate_plaintext_token();
+
+        self::assertSame( $stored, get_option( KADENCE_CHILD_OPTION_NAME ) );
     }
 
     public function test_environment_field_is_disabled_and_never_displays_secret(): void {
         putenv( 'KADENCE_CHILD_GITHUB_TOKEN=environment-secret' );
-        Functions\expect( 'get_option' )->never();
         $html = $this->renderTokenField();
 
         self::assertStringContainsString( 'disabled', $html );
@@ -138,7 +144,7 @@ final class TokenSettingsTest extends TestCase {
     }
 
     public function test_saved_token_field_is_editable_and_never_displays_secret(): void {
-        Functions\when( 'get_option' )->justReturn( 'saved-secret' );
+        update_option( KADENCE_CHILD_OPTION_NAME, kadence_child_encrypt_token( 'saved-secret' ) );
         $html = $this->renderTokenField();
 
         self::assertStringNotContainsString( 'disabled', $html );
@@ -149,14 +155,6 @@ final class TokenSettingsTest extends TestCase {
     }
 
     private function renderTokenField(): string {
-        Functions\when( 'esc_attr' )->alias( function ( $value ) {
-            return htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' );
-        } );
-        Functions\when( '__' )->returnArg();
-        Functions\when( 'esc_html_e' )->alias( function ( $value ) {
-            echo htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' );
-        } );
-
         ob_start();
         try {
             kadence_child_render_token_field();
